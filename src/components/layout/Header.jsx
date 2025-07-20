@@ -37,7 +37,7 @@ const Header = () => {
 
                 <div className="flex items-center space-x-4">
                     <div className="flex items-center space-x-2 text-sm text-gray-600">
-                        {/* Show loading state from Auth0 SDK */}
+                        {/* Shows loading state from Auth0 SDK */}
                         {auth0Loading ? (
                             <span>Loading user...</span>
                         ) : (
@@ -46,19 +46,16 @@ const Header = () => {
                     </div>
 
                     <div className="flex items-center space-x-2">
-                        {/* Conditional rendering - show search only when not authenticated */}
                         {!isAuthenticated && (
                             <Button variant="ghost" size="icon">
                                 <Search className="h-4 w-4" />
                             </Button>
                         )}
                         
-                        {/* Bell notification - always present */}
                         <Button variant="ghost" size="icon">
                             <Bell className="h-4 w-4" />
                         </Button>
 
-                        {/* Profile picture - only show when authenticated */}
                         {isAuthenticated && user && (
                         <Button variant="ghost" size="icon" className="rounded-full p-0 w-8 h-8">
                             {user.picture ? (
@@ -79,7 +76,6 @@ const Header = () => {
                         )}
 
 
-                        {/* Conditional rendering based on Auth0's isAuthenticated status */}
                         {isAuthenticated ? (
                             <Button variant="outline" className="text-sm" onClick={handleSignOut}>
                                 Sign Out

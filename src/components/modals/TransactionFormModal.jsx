@@ -179,7 +179,7 @@ const TransactionFormModal = ({ isOpen, onClose, defaultType = 'expense' }) => {
       onClick={handleBackdropClick}
     >
       <div className="w-full max-w-lg">
-        <Card className="bg-white shadow-2xl border-0 rounded-xl flex flex-col max-h-[95vh]"> {/* Added flex-col and max-h */}
+        <Card className="bg-white shadow-2xl border-0 rounded-xl flex flex-col max-h-[95vh]">
           <CardHeader className="pb-4 sticky top-0 bg-white z-10 border-b border-gray-200 rounded-t-xl"> {/* Sticky header */}
             <div className="flex items-center justify-between">
               <CardTitle className="text-2xl font-bold text-gray-900">
@@ -196,7 +196,7 @@ const TransactionFormModal = ({ isOpen, onClose, defaultType = 'expense' }) => {
             </div>
           </CardHeader>
 
-          <CardContent className="pt-0 flex-grow overflow-y-auto"> {/* Added flex-grow and overflow-y-auto */}
+          <CardContent className="pt-0 flex-grow overflow-y-auto"> 
             <form onSubmit={handleSubmit} className="space-y-5 py-4"> {/* Added padding to form */}
               {/* Type Selection */}
               <div className="space-y-2">
@@ -207,7 +207,7 @@ const TransactionFormModal = ({ isOpen, onClose, defaultType = 'expense' }) => {
                   <SelectTrigger className="h-11 bg-gray-50 border-gray-200 focus:border-blue-500 focus:ring-blue-500">
                     <SelectValue placeholder="Select type" />
                   </SelectTrigger>
-                  <SelectContent className="z-[9999]"> {/* Ensure high z-index for dropdown content */}
+                  <SelectContent className="z-[9999]">
                     <SelectItem value="expense">💸 Expense</SelectItem>
                     <SelectItem value="income">💰 Income</SelectItem>
                   </SelectContent>
@@ -262,17 +262,16 @@ const TransactionFormModal = ({ isOpen, onClose, defaultType = 'expense' }) => {
                   <SelectTrigger className="h-11 bg-gray-50 border-gray-200 focus:border-blue-500 focus:ring-blue-500">
                     <SelectValue
                       placeholder={
-                        auth0Loading ? "Authenticating..." : // Auth0 SDK loading
-                        !isAuthenticated ? "Login required" : // Not authenticated
-                        isCategoriesLoading ? "Loading categories..." : // Categories still fetching
-                        fetchingCategoriesError ? `Error: ${fetchingCategoriesError}` : // Error fetching categories
-                        filteredCategories.length === 0 ? "No categories found." : // No categories for type
-                        "Select category" // Default placeholder
+                        auth0Loading ? "Authenticating..." : 
+                        !isAuthenticated ? "Login required" : 
+                        isCategoriesLoading ? "Loading categories..." : 
+                        fetchingCategoriesError ? `Error: ${fetchingCategoriesError}` :
+                        filteredCategories.length === 0 ? "No categories found." : 
+                        "Select category"
                       }
                     />
                   </SelectTrigger>
-                  <SelectContent className="z-[9999]"> {/* Ensure high z-index */}
-                    {/* Render categories only if authenticated, not loading, no error, and categories exist */}
+                  <SelectContent className="z-[9999]">
                     {isAuthenticated && !isCategoriesLoading && !fetchingCategoriesError && filteredCategories.length > 0 &&
                       filteredCategories.map((cat) => (
                         <SelectItem key={cat._id} value={cat._id}>
@@ -280,8 +279,7 @@ const TransactionFormModal = ({ isOpen, onClose, defaultType = 'expense' }) => {
                         </SelectItem>
                       ))
                     }
-                    {/* No direct <SelectItem> for "No categories found" to avoid Radix UI error.
-                        The placeholder will handle this state. */}
+                    
                   </SelectContent>
                 </Select>
               </div>

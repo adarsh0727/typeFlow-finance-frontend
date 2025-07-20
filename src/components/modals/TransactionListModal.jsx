@@ -78,9 +78,8 @@ const TransactionListModal = ({ isOpen, onClose }) => {
 
   useEffect(() => {
     const fetchTransactions = async () => {
-      // Only fetch if modal is open AND Auth0 is ready and authenticated
       if (!isOpen || !isAuthenticated || auth0Loading) {
-        setIsLoading(false); // Ensure loading is false if not fetching
+        setIsLoading(false); 
         return;
       }
 
@@ -142,8 +141,8 @@ const TransactionListModal = ({ isOpen, onClose }) => {
     setTransactions([]);
     setCurrentPage(1);
     setTotalPages(1);
-    setLimit(10); // Resets limit to default
-    setFilterType('all'); // Resets to 'all'
+    setLimit(10); 
+    setFilterType('all'); 
     setFilterCategory('_all'); // Resets filter category to "_all"
     setFilterStartDate('');
     setFilterEndDate('');
@@ -202,9 +201,7 @@ const TransactionListModal = ({ isOpen, onClose }) => {
                 />
               </SelectTrigger>
               <SelectContent className="z-[9999] bg-white border-gray-200">
-                {/* "_all" is fine as a non-empty string */}
                 <SelectItem value="_all">All Categories</SelectItem>
-                {/* Map over fetched categories only if authenticated, not loading, and no error */}
                 {isAuthenticated && !isCategoriesLoading && !categoriesError && categories.map(cat => (
                   <SelectItem key={cat._id} value={cat._id}>{cat.name}</SelectItem>
                 ))}
@@ -231,7 +228,6 @@ const TransactionListModal = ({ isOpen, onClose }) => {
           </div>
 
 
-          {/* Loading, Error, No Data Messages */}
           {auth0Loading && (
             <div className="flex items-center justify-center py-8 text-blue-500">
               <Loader2 className="mr-2 h-6 w-6 animate-spin" />

@@ -3,13 +3,11 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { Dashboard } from "@/pages/Dashboard";
 import LandingPage from "@/pages/LandingPage";
 import { useAuth0, withAuthenticationRequired } from "@auth0/auth0-react";
-import { Loader2 } from "lucide-react"; // <-- Add this import
+import { Loader2 } from "lucide-react"; 
 
-// A wrapper component to protect routes
 const ProtectedRoute = ({ component: Component, ...args }) => {
   const { isLoading } = useAuth0();
 
-  // Show a loading screen while Auth0 is authenticating
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-gray-100">
@@ -19,7 +17,6 @@ const ProtectedRoute = ({ component: Component, ...args }) => {
     );
   }
 
-  // Use withAuthenticationRequired from Auth0 SDK to enforce login
   const ComponentWithAuth = withAuthenticationRequired(Component, {
     onRedirecting: () => (
       <div className="flex items-center justify-center min-h-screen bg-gray-100">

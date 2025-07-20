@@ -35,7 +35,7 @@ const ReportsModal = ({ isOpen, onClose }) => {
     try {
       const accessToken = await getAccessTokenSilently({
         authorizationParams: {
-          audience: process.env.VITE_AUTH0_AUDIENCE,
+          audience: import.meta.env.VITE_AUTH0_AUDIENCE,
         },
       });
 

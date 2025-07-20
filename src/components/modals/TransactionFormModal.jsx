@@ -14,18 +14,28 @@ const TransactionFormModal = ({ isOpen, onClose, defaultType = 'expense' }) => {
 
   const [type, setType] = useState(defaultType);
   const [amount, setAmount] = useState('');
-  const [date, setDate] = useState('');
+  const [date, setDate] = useState(() => {
+    const now = new Date();
+    
+    const year = now.getFullYear();
+    const month = (now.getMonth() + 1).toString().padStart(2, '0');
+    const day = now.getDate().toString().padStart(2, '0');
+    const hours = now.getHours().toString().padStart(2, '0');
+    const minutes = now.getMinutes().toString().padStart(2, '0');
+    return `${year}-${month}-${day}T${hours}:${minutes}`;
+  });
+
   const [description, setDescription] = useState('');
   const [merchantName, setMerchantName] = useState('');
-  const [categoryId, setCategoryId] = useState(''); 
+  const [categoryId, setCategoryId] = useState('');
   const [paymentMethod, setPaymentMethod] = useState('');
   const [tags, setTags] = useState('');
 
   const [categories, setCategories] = useState([]);
-  const [fetchingCategoriesError, setFetchingCategoriesError] = useState(null); 
+  const [fetchingCategoriesError, setFetchingCategoriesError] = useState(null);
   const [isCategoriesLoading, setIsCategoriesLoading] = useState(false);
 
-  const [isLoading, setIsLoading] = useState(false); 
+  const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState('');
   const [isError, setIsError] = useState(false);
 
@@ -33,21 +43,20 @@ const TransactionFormModal = ({ isOpen, onClose, defaultType = 'expense' }) => {
     if (isOpen) {
       setType(defaultType);
       setAmount('');
-      setDate(new Date().toISOString().split('T')[0]); // YYYY-MM-DD
+      setDate(new Date().toISOString().slice(0, 16)); 
       setDescription('');
       setMerchantName('');
-      setCategoryId(''); 
+      setCategoryId('');
       setPaymentMethod('');
       setTags('');
-      setMessage(''); 
+      setMessage('');
       setIsError(false);
-      setFetchingCategoriesError(null); 
+      setFetchingCategoriesError(null);
       if (isAuthenticated && !auth0Loading) {
         fetchCategories();
       }
     }
-  }, [isOpen, defaultType, isAuthenticated, auth0Loading]); 
-  
+  }, [isOpen, defaultType, isAuthenticated, auth0Loading]);
 
   const fetchCategories = async () => {
     setIsCategoriesLoading(true);
@@ -56,11 +65,12 @@ const TransactionFormModal = ({ isOpen, onClose, defaultType = 'expense' }) => {
     try {
       const accessToken = await getAccessTokenSilently({
         authorizationParams: {
-          audience: process.env.VITE_AUTH0_AUDIENCE, 
+          audience: import.meta.env.VITE_AUTH0_AUDIENCE,
         },
       });
 
       const response = await fetch('http://localhost:5000/api/categories', {
+        method: 'GET',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${accessToken}`
@@ -71,21 +81,27 @@ const TransactionFormModal = ({ isOpen, onClose, defaultType = 'expense' }) => {
         throw new Error(errorData.message || 'Failed to fetch categories.');
       }
       const data = await response.json();
-      setCategories(data);
+      if (Array.isArray(data)) {
+        setCategories(data);
+      } else {
+        console.error("API returned categories in an unexpected format (not an array):", data);
+        throw new Error('Categories data received in unexpected format from server.');
+      }
     } catch (error) {
       console.error('Error fetching categories:', error);
       setFetchingCategoriesError(error.message);
+      setCategories([]);
     } finally {
       setIsCategoriesLoading(false);
     }
   };
 
-  const filteredCategories = categories.filter(cat =>
+  const filteredCategories = Array.isArray(categories) ? categories.filter(cat =>
     cat.type === 'both' || cat.type === type
-  );
+  ) : [];
 
   const handleSubmit = async (e) => {
-    e.preventDefault(); 
+    e.preventDefault();
 
     setIsLoading(true);
     setMessage('');
@@ -114,7 +130,7 @@ const TransactionFormModal = ({ isOpen, onClose, defaultType = 'expense' }) => {
     const transactionData = {
       type,
       amount: parseFloat(amount),
-      date,
+      date: date,
       description: description.trim(),
       merchantName: merchantName.trim(),
       categoryId,
@@ -125,7 +141,7 @@ const TransactionFormModal = ({ isOpen, onClose, defaultType = 'expense' }) => {
     try {
       const accessToken = await getAccessTokenSilently({
         authorizationParams: {
-          audience: process.env.VITE_AUTH0_AUDIENCE,
+          audience: import.meta.env.VITE_AUTH0_AUDIENCE,
         },
       });
 
@@ -148,7 +164,7 @@ const TransactionFormModal = ({ isOpen, onClose, defaultType = 'expense' }) => {
       setIsError(false);
       setType(defaultType);
       setAmount('');
-      setDate(new Date().toISOString().split('T')[0]);
+      setDate(new Date().toISOString().slice(0, 16)); 
       setDescription('');
       setMerchantName('');
       setCategoryId('');
@@ -180,7 +196,7 @@ const TransactionFormModal = ({ isOpen, onClose, defaultType = 'expense' }) => {
     >
       <div className="w-full max-w-lg">
         <Card className="bg-white shadow-2xl border-0 rounded-xl flex flex-col max-h-[95vh]">
-          <CardHeader className="pb-4 sticky top-0 bg-white z-10 border-b border-gray-200 rounded-t-xl"> {/* Sticky header */}
+          <CardHeader className="pb-4 sticky top-0 bg-white z-10 border-b border-gray-200 rounded-t-xl">
             <div className="flex items-center justify-between">
               <CardTitle className="text-2xl font-bold text-gray-900">
                 {type === 'expense' ? 'Add New Expense' : 'Add New Income'}
@@ -196,8 +212,8 @@ const TransactionFormModal = ({ isOpen, onClose, defaultType = 'expense' }) => {
             </div>
           </CardHeader>
 
-          <CardContent className="pt-0 flex-grow overflow-y-auto"> 
-            <form onSubmit={handleSubmit} className="space-y-5 py-4"> {/* Added padding to form */}
+          <CardContent className="pt-0 flex-grow overflow-y-auto">
+            <form onSubmit={handleSubmit} className="space-y-5 py-4">
               {/* Type Selection */}
               <div className="space-y-2">
                 <Label htmlFor="type" className="text-sm font-medium text-gray-700">
@@ -207,9 +223,9 @@ const TransactionFormModal = ({ isOpen, onClose, defaultType = 'expense' }) => {
                   <SelectTrigger className="h-11 bg-gray-50 border-gray-200 focus:border-blue-500 focus:ring-blue-500">
                     <SelectValue placeholder="Select type" />
                   </SelectTrigger>
-                  <SelectContent className="z-[9999]">
-                    <SelectItem value="expense">💸 Expense</SelectItem>
-                    <SelectItem value="income">💰 Income</SelectItem>
+                  <SelectContent className="z-[9999] bg-white border border-gray-200 shadow-lg">
+                    <SelectItem value="expense">Expense</SelectItem>
+                    <SelectItem value="income">Income</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -235,11 +251,11 @@ const TransactionFormModal = ({ isOpen, onClose, defaultType = 'expense' }) => {
 
                 <div className="space-y-2">
                   <Label htmlFor="date" className="text-sm font-medium text-gray-700">
-                    Date *
+                    Date & Time * {/* Changed label to reflect time */}
                   </Label>
                   <Input
                     id="date"
-                    type="date"
+                    type="datetime-local" 
                     value={date}
                     onChange={(e) => setDate(e.target.value)}
                     required
@@ -262,16 +278,17 @@ const TransactionFormModal = ({ isOpen, onClose, defaultType = 'expense' }) => {
                   <SelectTrigger className="h-11 bg-gray-50 border-gray-200 focus:border-blue-500 focus:ring-blue-500">
                     <SelectValue
                       placeholder={
-                        auth0Loading ? "Authenticating..." : 
-                        !isAuthenticated ? "Login required" : 
-                        isCategoriesLoading ? "Loading categories..." : 
+                        auth0Loading ? "Authenticating..." :
+                        !isAuthenticated ? "Login required" :
+                        isCategoriesLoading ? "Loading categories..." :
                         fetchingCategoriesError ? `Error: ${fetchingCategoriesError}` :
-                        filteredCategories.length === 0 ? "No categories found." : 
+                        filteredCategories.length === 0 ? "No categories found." :
                         "Select category"
                       }
                     />
                   </SelectTrigger>
-                  <SelectContent className="z-[9999]">
+                  <SelectContent className="z-[9999] bg-white border border-gray-200 shadow-lg">
+                    {/* Render categories only if authenticated, not loading, no error, and categories exist */}
                     {isAuthenticated && !isCategoriesLoading && !fetchingCategoriesError && filteredCategories.length > 0 &&
                       filteredCategories.map((cat) => (
                         <SelectItem key={cat._id} value={cat._id}>
@@ -279,7 +296,6 @@ const TransactionFormModal = ({ isOpen, onClose, defaultType = 'expense' }) => {
                         </SelectItem>
                       ))
                     }
-                    
                   </SelectContent>
                 </Select>
               </div>
@@ -366,7 +382,7 @@ const TransactionFormModal = ({ isOpen, onClose, defaultType = 'expense' }) => {
                 <Button
                   type="submit"
                   className="w-full h-12 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition-colors duration-200"
-                  disabled={isLoading || !isAuthenticated || auth0Loading} // Disable if not authenticated or loading
+                  disabled={isLoading || !isAuthenticated || auth0Loading}
                 >
                   {isLoading ? (
                     <>

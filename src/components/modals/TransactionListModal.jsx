@@ -18,7 +18,7 @@ const TransactionListModal = ({ isOpen, onClose }) => {
   // pagination states
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
-  const [limit, setLimit] = useState(10); // items per page
+  const [limit, setLimit] = useState(5); // items per page
 
   
   const [filterType, setFilterType] = useState('all');
@@ -49,7 +49,7 @@ const TransactionListModal = ({ isOpen, onClose }) => {
       try {
         const accessToken = await getAccessTokenSilently({
           authorizationParams: {
-            audience: process.env.VITE_AUTH0_AUDIENCE,
+            audience: import.meta.env.VITE_AUTH0_AUDIENCE,
           },
         });
 
@@ -88,7 +88,7 @@ const TransactionListModal = ({ isOpen, onClose }) => {
       try {
         const accessToken = await getAccessTokenSilently({
           authorizationParams: {
-            audience: process.env.VITE_AUTH0_AUDIENCE,
+            audience: import.meta.env.VITE_AUTH0_AUDIENCE,
           },
         });
 

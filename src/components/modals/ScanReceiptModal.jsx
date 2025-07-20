@@ -42,7 +42,7 @@ const ScanReceiptModal = ({ isOpen, onClose }) => {
     try {
       const accessToken = await getAccessTokenSilently({
         authorizationParams: {
-          audience: process.env.VITE_AUTH0_AUDIENCE,
+          audience: import.meta.env.VITE_AUTH0_AUDIENCE,
         },
       });
 
@@ -54,6 +54,8 @@ const ScanReceiptModal = ({ isOpen, onClose }) => {
         },
         body: formData,
       });
+
+      console.log(accessToken);
 
       const result = await response.json();
 

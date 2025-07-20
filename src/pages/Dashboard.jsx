@@ -1,9 +1,10 @@
+// frontend/src/pages/Dashboard.jsx (Simplified as per new backend strategy)
 import React, { useState, useEffect, useCallback } from 'react';
 import Header from '@/components/layout/Header';
 import DashboardStats from '../components/dashboard/DashboardStats';
 import QuickActions from '../components/dashboard/QuickActions';
 import GettingStarted from '../components/dashboard/GettingStarted';
-import { RefreshCw, AlertCircle, Loader2 } from 'lucide-react'; 
+import { RefreshCw, AlertCircle, Loader2 } from 'lucide-react';
 import { useAuth0 } from '@auth0/auth0-react';
 
 export const Dashboard = () => {
@@ -11,21 +12,19 @@ export const Dashboard = () => {
 
   const [isLoadingDashboardData, setIsLoadingDashboardData] = useState(true);
   const [lastUpdated, setLastUpdated] = useState(new Date());
-  const [backendUser, setBackendUser] = useState(null);
+
   const [dashboardSummary, setDashboardSummary] = useState(null);
-  // Specific error for dashboard data fetching
   const [dashboardError, setDashboardError] = useState(null);
 
-  // Function to fetch all necessary dashboard data your backend
   const fetchData = useCallback(async () => {
-    
     if (auth0Loading || !isAuthenticated) {
-      setIsLoadingDashboardData(false); 
+      setIsLoadingDashboardData(false);
       if (!auth0Loading && !isAuthenticated) {
-        setDashboardError('Authentication required to load dashboard data.');
+        setDashboardError(auth0Error ? auth0Error.message : 'Authentication required to load dashboard data.');
       } else if (auth0Error) {
         setDashboardError(auth0Error.message);
       }
+      setDashboardSummary(null); 
       return;
     }
 
@@ -34,27 +33,15 @@ export const Dashboard = () => {
     try {
       const accessToken = await getAccessTokenSilently({
         authorizationParams: {
-          audience: import.meta.env.VITE_AUTH0_AUDIENCE, 
+          audience: import.meta.env.VITE_AUTH0_AUDIENCE,
         },
       });
 
-      const userRes = await fetch('http://localhost:5000/api/auth/profile', {
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${accessToken}` 
-        }
-      });
-      if (!userRes.ok) {
-        const errorData = await userRes.json();
-        throw new Error(errorData.message || 'Failed to fetch user profile from backend.');
-      }
-      const userData = await userRes.json();
-      setBackendUser(userData); 
-      
+     
       const summaryRes = await fetch('http://localhost:5000/api/reports/dashboard-summary', {
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${accessToken}` // Uses Auth0 access token
+          'Authorization': `Bearer ${accessToken}`
         }
       });
       if (!summaryRes.ok) {
@@ -64,11 +51,10 @@ export const Dashboard = () => {
       const summaryData = await summaryRes.json();
       setDashboardSummary(summaryData);
 
-      setLastUpdated(new Date()); 
+      setLastUpdated(new Date());
     } catch (err) {
       console.error('Error fetching dashboard data:', err);
-      setDashboardError(err.message || 'An unknown error occurred.'); 
-      setBackendUser(null);
+      setDashboardError(err.message || 'An unknown error occurred.');
       setDashboardSummary(null);
     } finally {
       setIsLoadingDashboardData(false);
@@ -76,14 +62,13 @@ export const Dashboard = () => {
   }, [isAuthenticated, auth0Loading, auth0Error, getAccessTokenSilently]);
 
   useEffect(() => {
-   
     if (!auth0Loading) {
       fetchData();
     }
-  }, [auth0Loading, fetchData]); 
+  }, [auth0Loading, fetchData]);
 
   const handleRefresh = () => {
-    fetchData(); 
+    fetchData();
   };
 
   const formatTime = (date) => {
@@ -94,7 +79,6 @@ export const Dashboard = () => {
       hour12: true
     });
   };
-
 
   if (auth0Loading) {
     return (
@@ -123,13 +107,14 @@ export const Dashboard = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
-      <Header /> {/* Header handles its own Auth0 state */}
+      <Header /> {/* Header handles its own Auth0 status display */}
 
       <main className="p-6 space-y-6 max-w-7xl mx-auto">
         <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-6">
           <div>
             <h1 className="text-3xl font-bold text-gray-900 mb-2">
-              {backendUser ? `Welcome back, ${backendUser.username ? backendUser.username.split(' ')[0] : 'User'}!` : 'Financial Dashboard'}
+              {/* Use Auth0's `user` object directly for welcome message */}
+              {user ? `Welcome back, ${user.name ? user.name.split(' ')[0] : 'User'}!` : 'Financial Dashboard'}
             </h1>
             <div className="flex items-center space-x-4 text-sm text-gray-600">
               <p>Monitor and manage your financial portfolio</p>

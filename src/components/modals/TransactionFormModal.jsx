@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { XCircle, CheckCircle, Loader2, X } from 'lucide-react';
+import { useAuth0 } from '@auth0/auth0-react'; 
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -9,30 +10,30 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 const TransactionFormModal = ({ isOpen, onClose, defaultType = 'expense' }) => {
-  // State for form inputs
+  const { getAccessTokenSilently, isAuthenticated, isLoading: auth0Loading } = useAuth0();
+
   const [type, setType] = useState(defaultType);
   const [amount, setAmount] = useState('');
   const [date, setDate] = useState('');
   const [description, setDescription] = useState('');
   const [merchantName, setMerchantName] = useState('');
-  const [categoryId, setCategoryId] = useState(''); // Stores the _id of the selected category
+  const [categoryId, setCategoryId] = useState(''); 
   const [paymentMethod, setPaymentMethod] = useState('');
-  const [tags, setTags] = useState(''); // Comma-separated string for tags
+  const [tags, setTags] = useState('');
 
-  // State for fetching categories dropdown
   const [categories, setCategories] = useState([]);
-  const [fetchingCategoriesError, setFetchingCategoriesError] = useState(null); // Separate error for category fetch
+  const [fetchingCategoriesError, setFetchingCategoriesError] = useState(null); 
+  const [isCategoriesLoading, setIsCategoriesLoading] = useState(false);
 
-  // State for form submission process
-  const [isLoading, setIsLoading] = useState(false);
-  const [message, setMessage] = useState(''); // sucess/eorror message
+  const [isLoading, setIsLoading] = useState(false); 
+  const [message, setMessage] = useState('');
   const [isError, setIsError] = useState(false);
 
   useEffect(() => {
     if (isOpen) {
       setType(defaultType);
       setAmount('');
-      setDate(new Date().toISOString().split('T')[0]); // Default to today's date (YYYY-MM-DD)
+      setDate(new Date().toISOString().split('T')[0]); // YYYY-MM-DD
       setDescription('');
       setMerchantName('');
       setCategoryId(''); 
@@ -40,21 +41,29 @@ const TransactionFormModal = ({ isOpen, onClose, defaultType = 'expense' }) => {
       setTags('');
       setMessage(''); 
       setIsError(false);
-      setFetchingCategoriesError(null);
-      fetchCategories();
+      setFetchingCategoriesError(null); 
+      if (isAuthenticated && !auth0Loading) {
+        fetchCategories();
+      }
     }
-  }, [isOpen, defaultType]); 
+  }, [isOpen, defaultType, isAuthenticated, auth0Loading]); 
+  
 
   const fetchCategories = async () => {
+    setIsCategoriesLoading(true);
+    setFetchingCategoriesError(null);
+    setCategories([]);
     try {
-      const authToken = localStorage.getItem('authToken'); // Retrieves authentication token
-      if (!authToken) {
-        throw new Error('Authentication token not found. Please log in.');
-      }
+      const accessToken = await getAccessTokenSilently({
+        authorizationParams: {
+          audience: process.env.VITE_AUTH0_AUDIENCE, 
+        },
+      });
+
       const response = await fetch('http://localhost:5000/api/categories', {
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${authToken}`
+          'Authorization': `Bearer ${accessToken}`
         }
       });
       if (!response.ok) {
@@ -65,7 +74,9 @@ const TransactionFormModal = ({ isOpen, onClose, defaultType = 'expense' }) => {
       setCategories(data);
     } catch (error) {
       console.error('Error fetching categories:', error);
-      setFetchingCategoriesError(error.message); 
+      setFetchingCategoriesError(error.message);
+    } finally {
+      setIsCategoriesLoading(false);
     }
   };
 
@@ -79,6 +90,13 @@ const TransactionFormModal = ({ isOpen, onClose, defaultType = 'expense' }) => {
     setIsLoading(true);
     setMessage('');
     setIsError(false);
+
+    if (!isAuthenticated || auth0Loading) {
+      setMessage('Authentication required. Please log in.');
+      setIsError(true);
+      setIsLoading(false);
+      return;
+    }
 
     if (!type || !amount || !date || !categoryId) {
       setMessage('Please fill in all required fields: Type, Amount, Date, Category.');
@@ -101,20 +119,21 @@ const TransactionFormModal = ({ isOpen, onClose, defaultType = 'expense' }) => {
       merchantName: merchantName.trim(),
       categoryId,
       paymentMethod: paymentMethod.trim(),
-      tags: tags.split(',').map(tag => tag.trim()).filter(tag => tag !== ''), // Split tags string into array, clean, and filter empty
+      tags: tags.split(',').map(tag => tag.trim()).filter(tag => tag !== ''),
     };
 
     try {
-      const authToken = localStorage.getItem('authToken');
-      if (!authToken) {
-        throw new Error('Authentication token not found. Please log in.');
-      }
+      const accessToken = await getAccessTokenSilently({
+        authorizationParams: {
+          audience: process.env.VITE_AUTH0_AUDIENCE,
+        },
+      });
 
       const response = await fetch('http://localhost:5000/api/transactions', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${authToken}`
+          'Authorization': `Bearer ${accessToken}`
         },
         body: JSON.stringify(transactionData),
       });
@@ -125,7 +144,7 @@ const TransactionFormModal = ({ isOpen, onClose, defaultType = 'expense' }) => {
         throw new Error(result.message || 'Failed to add transaction.');
       }
 
-      setMessage('Transaction added successfully!');
+      setMessage('Transaction added successfully! 🎉');
       setIsError(false);
       setType(defaultType);
       setAmount('');
@@ -155,20 +174,20 @@ const TransactionFormModal = ({ isOpen, onClose, defaultType = 'expense' }) => {
   if (!isOpen) return null;
 
   return (
-    <div 
+    <div
       className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4"
       onClick={handleBackdropClick}
     >
       <div className="w-full max-w-lg">
-        <Card className="bg-white backdrop-blur-md shadow-2xl border-0 rounded-xl">
-          <CardHeader className="pb-4">
+        <Card className="bg-white shadow-2xl border-0 rounded-xl flex flex-col max-h-[95vh]"> {/* Added flex-col and max-h */}
+          <CardHeader className="pb-4 sticky top-0 bg-white z-10 border-b border-gray-200 rounded-t-xl"> {/* Sticky header */}
             <div className="flex items-center justify-between">
               <CardTitle className="text-2xl font-bold text-gray-900">
                 {type === 'expense' ? 'Add New Expense' : 'Add New Income'}
               </CardTitle>
-              <Button 
-                variant="ghost" 
-                size="sm" 
+              <Button
+                variant="ghost"
+                size="sm"
                 onClick={onClose}
                 className="text-gray-500 hover:text-gray-700 h-8 w-8 p-0"
               >
@@ -177,18 +196,18 @@ const TransactionFormModal = ({ isOpen, onClose, defaultType = 'expense' }) => {
             </div>
           </CardHeader>
 
-          <CardContent className="pt-0">
-            <form onSubmit={handleSubmit} className="space-y-5">
+          <CardContent className="pt-0 flex-grow overflow-y-auto"> {/* Added flex-grow and overflow-y-auto */}
+            <form onSubmit={handleSubmit} className="space-y-5 py-4"> {/* Added padding to form */}
               {/* Type Selection */}
               <div className="space-y-2">
                 <Label htmlFor="type" className="text-sm font-medium text-gray-700">
                   Transaction Type *
                 </Label>
-                <Select value={type} onValueChange={setType} disabled={isLoading}>
+                <Select value={type} onValueChange={setType} disabled={isLoading || auth0Loading}>
                   <SelectTrigger className="h-11 bg-gray-50 border-gray-200 focus:border-blue-500 focus:ring-blue-500">
                     <SelectValue placeholder="Select type" />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="z-[9999]"> {/* Ensure high z-index for dropdown content */}
                     <SelectItem value="expense">💸 Expense</SelectItem>
                     <SelectItem value="income">💰 Income</SelectItem>
                   </SelectContent>
@@ -235,30 +254,34 @@ const TransactionFormModal = ({ isOpen, onClose, defaultType = 'expense' }) => {
                 <Label htmlFor="category" className="text-sm font-medium text-gray-700">
                   Category *
                 </Label>
-                <Select value={categoryId} onValueChange={setCategoryId} disabled={isLoading || categories.length === 0 || fetchingCategoriesError}>
+                <Select
+                  value={categoryId}
+                  onValueChange={setCategoryId}
+                  disabled={isLoading || isCategoriesLoading || fetchingCategoriesError || !isAuthenticated}
+                >
                   <SelectTrigger className="h-11 bg-gray-50 border-gray-200 focus:border-blue-500 focus:ring-blue-500">
-                    <SelectValue placeholder={
-                      fetchingCategoriesError 
-                        ? `Error: ${fetchingCategoriesError}` 
-                        : (categories.length === 0 ? "Loading categories..." : "Select category")
-                    } />
+                    <SelectValue
+                      placeholder={
+                        auth0Loading ? "Authenticating..." : // Auth0 SDK loading
+                        !isAuthenticated ? "Login required" : // Not authenticated
+                        isCategoriesLoading ? "Loading categories..." : // Categories still fetching
+                        fetchingCategoriesError ? `Error: ${fetchingCategoriesError}` : // Error fetching categories
+                        filteredCategories.length === 0 ? "No categories found." : // No categories for type
+                        "Select category" // Default placeholder
+                      }
+                    />
                   </SelectTrigger>
-                  <SelectContent>
-                    {fetchingCategoriesError ? (
-                      <SelectItem value="error-loading" disabled>
-                        Error loading categories.
-                      </SelectItem>
-                    ) : filteredCategories.length > 0 ? (
+                  <SelectContent className="z-[9999]"> {/* Ensure high z-index */}
+                    {/* Render categories only if authenticated, not loading, no error, and categories exist */}
+                    {isAuthenticated && !isCategoriesLoading && !fetchingCategoriesError && filteredCategories.length > 0 &&
                       filteredCategories.map((cat) => (
                         <SelectItem key={cat._id} value={cat._id}>
                           {cat.name}
                         </SelectItem>
                       ))
-                    ) : (
-                      <SelectItem value="no-categories-found" disabled>
-                        No categories found for this type.
-                      </SelectItem>
-                    )}
+                    }
+                    {/* No direct <SelectItem> for "No categories found" to avoid Radix UI error.
+                        The placeholder will handle this state. */}
                   </SelectContent>
                 </Select>
               </div>
@@ -330,9 +353,9 @@ const TransactionFormModal = ({ isOpen, onClose, defaultType = 'expense' }) => {
 
               {/* Message/Error Display */}
               {message && (
-                <div className={`flex items-center p-4 rounded-lg border ${
-                  isError 
-                    ? 'bg-red-50 border-red-200 text-red-700' 
+                <div className={`flex items-start p-4 rounded-lg border ${
+                  isError
+                    ? 'bg-red-50 border-red-200 text-red-700'
                     : 'bg-green-50 border-green-200 text-green-700'
                 }`}>
                   {isError ? <XCircle className="h-5 w-5 mr-3 flex-shrink-0" /> : <CheckCircle className="h-5 w-5 mr-3 flex-shrink-0" />}
@@ -342,10 +365,10 @@ const TransactionFormModal = ({ isOpen, onClose, defaultType = 'expense' }) => {
 
               {/* Submit Button */}
               <div className="pt-4">
-                <Button 
-                  type="submit" 
-                  className="w-full h-12 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition-colors duration-200" 
-                  disabled={isLoading}
+                <Button
+                  type="submit"
+                  className="w-full h-12 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition-colors duration-200"
+                  disabled={isLoading || !isAuthenticated || auth0Loading} // Disable if not authenticated or loading
                 >
                   {isLoading ? (
                     <>

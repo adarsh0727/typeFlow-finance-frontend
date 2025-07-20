@@ -1,10 +1,13 @@
-import React, { useState } from 'react';
-import { Button } from '@/components/ui/button'; 
-import { Upload, XCircle, CheckCircle, Loader2 } from 'lucide-react'; 
+import React, { useState } from 'react'; 
+import { Button } from '@/components/ui/button';
+import { Upload, XCircle, CheckCircle, Loader2 } from 'lucide-react';
+import { useAuth0 } from '@auth0/auth0-react';
 
 const ScanReceiptModal = ({ isOpen, onClose }) => {
+  const { getAccessTokenSilently, isAuthenticated, isLoading: auth0Loading } = useAuth0();
+
   const [selectedFile, setSelectedFile] = useState(null);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(false); 
   const [message, setMessage] = useState('');
   const [isError, setIsError] = useState(false);
 
@@ -12,7 +15,7 @@ const ScanReceiptModal = ({ isOpen, onClose }) => {
 
   const handleFileChange = (event) => {
     setSelectedFile(event.target.files[0]);
-    setMessage(''); 
+    setMessage('');
     setIsError(false);
   };
 
@@ -23,7 +26,13 @@ const ScanReceiptModal = ({ isOpen, onClose }) => {
       return;
     }
 
-    setIsLoading(true);
+    if (auth0Loading || !isAuthenticated) {
+        setMessage('Authentication required. Please log in to upload receipts.');
+        setIsError(true);
+        return;
+    }
+
+    setIsLoading(true); 
     setMessage('');
     setIsError(false);
 
@@ -31,16 +40,17 @@ const ScanReceiptModal = ({ isOpen, onClose }) => {
     formData.append('receipt', selectedFile); 
 
     try {
-      const authToken = localStorage.getItem('authToken'); // token from local storage
-      if (!authToken) {
-        throw new Error('Authentication token not found. Please log in.');
-      }
+      const accessToken = await getAccessTokenSilently({
+        authorizationParams: {
+          audience: process.env.VITE_AUTH0_AUDIENCE,
+        },
+      });
 
-      // Route to backend OCR endpoint
       const response = await fetch('http://localhost:5000/api/ocr/upload-receipt', {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${authToken}`
+          
+          'Authorization': `Bearer ${accessToken}` // Using the Auth0 access token
         },
         body: formData,
       });
@@ -53,7 +63,7 @@ const ScanReceiptModal = ({ isOpen, onClose }) => {
 
       setMessage('Receipt processed and transaction created successfully!');
       setIsError(false);
-      setSelectedFile(null); 
+      setSelectedFile(null);
     } catch (error) {
       console.error('Upload error:', error);
       setMessage(error.message || 'An unexpected error occurred during upload.');
@@ -68,7 +78,7 @@ const ScanReceiptModal = ({ isOpen, onClose }) => {
     setIsLoading(false);
     setMessage('');
     setIsError(false);
-    onClose();
+    onClose(); 
   };
 
   return (
@@ -103,10 +113,18 @@ const ScanReceiptModal = ({ isOpen, onClose }) => {
               accept="image/*,application/pdf"
               onChange={handleFileChange}
               className="hidden"
-              disabled={isLoading}
+              disabled={isLoading || auth0Loading} 
             />
           </label>
         </div>
+
+        {/* Display Auth0 loading/error or general upload message */}
+        {(auth0Loading || !isAuthenticated) && !isLoading && (
+            <div className={`flex items-start p-4 rounded-lg mb-6 text-sm ${!isAuthenticated ? 'bg-red-50 text-red-700 border border-red-200' : 'bg-blue-50 text-blue-700 border border-blue-200'}`}>
+                {auth0Loading ? <Loader2 className="h-4 w-4 mr-2 mt-0.5 flex-shrink-0 animate-spin" /> : <XCircle className="h-4 w-4 mr-2 mt-0.5 flex-shrink-0" />}
+                <span>{auth0Loading ? "Authenticating..." : "You must be logged in to upload receipts."}</span>
+            </div>
+        )}
 
         {message && (
           <div className={`flex items-start p-4 rounded-lg mb-6 text-sm ${isError ? 'bg-red-50 text-red-700 border border-red-200' : 'bg-green-50 text-green-700 border border-green-200'}`}>
@@ -118,7 +136,7 @@ const ScanReceiptModal = ({ isOpen, onClose }) => {
         <Button
           onClick={handleUpload}
           className="w-full py-3 text-base font-medium"
-          disabled={isLoading || !selectedFile}
+          disabled={isLoading || !selectedFile || auth0Loading || !isAuthenticated} // Disable if Auth0 not ready or not authenticated
         >
           {isLoading ? (
             <>

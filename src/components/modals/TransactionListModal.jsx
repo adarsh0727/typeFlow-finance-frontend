@@ -2,36 +2,61 @@ import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { XCircle, Loader2 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
-
+import { useAuth0 } from '@auth0/auth0-react'; 
 
 const TransactionListModal = ({ isOpen, onClose }) => {
+  // Auth0 hooks
+  const { getAccessTokenSilently, isAuthenticated, isLoading: auth0Loading } = useAuth0();
+
   const [transactions, setTransactions] = useState([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState(null);
+  const [isLoading, setIsLoading] = useState(false); // For transaction fetching
+  const [error, setError] = useState(null); // General error for transactions
 
   // pagination states
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [limit, setLimit] = useState(10); // items per page
 
-  // Filtering states
-  const [filterType, setFilterType] = useState('all'); // 'income', 'expense', or 'all' for all types
-  const [filterCategory, setFilterCategory] = useState('_all'); // Selected category ID, use "_all" for no filter
+  
+  const [filterType, setFilterType] = useState('all');
+  const [filterCategory, setFilterCategory] = useState('_all');
+
   const [filterStartDate, setFilterStartDate] = useState('');
   const [filterEndDate, setFilterEndDate] = useState('');
 
-  const [categories, setCategories] = useState([]); // To populate category filter dropdown
+  const [categories, setCategories] = useState([]); 
+  const [isCategoriesLoading, setIsCategoriesLoading] = useState(false); // Loading state for categories
+  const [categoriesError, setCategoriesError] = useState(null); // Error for categories fetch
 
+
+  // Effect to fetch categories for the filter dropdown
   useEffect(() => {
     const fetchCategoriesForFilter = async () => {
+      setIsCategoriesLoading(true);
+      setCategoriesError(null);
+      setCategories([]); 
+
+      // Only attempt to fetch if Auth0 is ready and authenticated
+      if (auth0Loading || !isAuthenticated) {
+        setCategoriesError('Authentication required to load categories.'); 
+        setIsCategoriesLoading(false);
+        return;
+      }
+
       try {
-        const authToken = localStorage.getItem('authToken');
-        if (!authToken) throw new Error('Auth token missing for categories.');
-        const res = await fetch('http://localhost:5000/api/categories', {
-          headers: { Authorization: `Bearer ${authToken}` }
+        const accessToken = await getAccessTokenSilently({
+          authorizationParams: {
+            audience: process.env.VITE_AUTH0_AUDIENCE,
+          },
         });
+
+        const res = await fetch('http://localhost:5000/api/categories', {
+          headers: { Authorization: `Bearer ${accessToken}` }
+        });
+
         if (!res.ok) {
           const errData = await res.json();
           throw new Error(errData.message || 'Failed to fetch categories for filter.');
@@ -40,31 +65,37 @@ const TransactionListModal = ({ isOpen, onClose }) => {
         setCategories(data);
       } catch (err) {
         console.error('Error fetching categories for filter:', err);
-        setError(err.message);
+        setCategoriesError(err.message);
+      } finally {
+        setIsCategoriesLoading(false);
       }
     };
-    if (isOpen) {
+    if (isOpen) { 
       fetchCategoriesForFilter();
     }
-  }, [isOpen]);
+  }, [isOpen, isAuthenticated, auth0Loading, getAccessTokenSilently]);
 
 
   useEffect(() => {
     const fetchTransactions = async () => {
-      if (!isOpen) return;
+      // Only fetch if modal is open AND Auth0 is ready and authenticated
+      if (!isOpen || !isAuthenticated || auth0Loading) {
+        setIsLoading(false); // Ensure loading is false if not fetching
+        return;
+      }
 
       setIsLoading(true);
       setError(null);
       try {
-        const authToken = localStorage.getItem('authToken');
-        if (!authToken) {
-          throw new Error('Authentication token not found. Please log in.');
-        }
+        const accessToken = await getAccessTokenSilently({
+          authorizationParams: {
+            audience: process.env.VITE_AUTH0_AUDIENCE,
+          },
+        });
 
         const queryParams = new URLSearchParams();
         queryParams.append('page', currentPage.toString());
         queryParams.append('limit', limit.toString());
-        // Only add type filter if it's not 'all'
         if (filterType && filterType !== 'all') queryParams.append('type', filterType);
         if (filterCategory && filterCategory !== "_all") queryParams.append('categoryId', filterCategory);
         if (filterStartDate) queryParams.append('startDate', filterStartDate);
@@ -75,7 +106,7 @@ const TransactionListModal = ({ isOpen, onClose }) => {
         const response = await fetch(url, {
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${authToken}`
+            'Authorization': `Bearer ${accessToken}`
           }
         });
 
@@ -98,7 +129,7 @@ const TransactionListModal = ({ isOpen, onClose }) => {
     };
 
     fetchTransactions();
-  }, [isOpen, currentPage, limit, filterType, filterCategory, filterStartDate, filterEndDate]); // Re-fetch on filter/pagination change
+  }, [isOpen, currentPage, limit, filterType, filterCategory, filterStartDate, filterEndDate, isAuthenticated, auth0Loading, getAccessTokenSilently]); // Added Auth0 dependencies
 
   if (!isOpen) return null;
 
@@ -112,12 +143,14 @@ const TransactionListModal = ({ isOpen, onClose }) => {
     setCurrentPage(1);
     setTotalPages(1);
     setLimit(10); // Resets limit to default
-    setFilterType('all'); // Resets to 'all' instead of empty string
+    setFilterType('all'); // Resets to 'all'
     setFilterCategory('_all'); // Resets filter category to "_all"
     setFilterStartDate('');
     setFilterEndDate('');
     setError(null);
+    setCategoriesError(null); // Clear categories error
     setIsLoading(false);
+    setIsCategoriesLoading(false); // Clear categories loading
     onClose();
   };
 
@@ -136,12 +169,15 @@ const TransactionListModal = ({ isOpen, onClose }) => {
           {/* Filters */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
             {/* Filter by Type */}
-            <Select value={filterType} onValueChange={setFilterType}>
+            <Select
+              value={filterType}
+              onValueChange={setFilterType}
+              disabled={isLoading || auth0Loading || !isAuthenticated} // Disable if Auth0 not ready
+            >
               <SelectTrigger className="bg-white border-gray-200 text-gray-900">
-                <SelectValue placeholder="Filter by type" />
+                <SelectValue placeholder={auth0Loading ? "Authenticating..." : (!isAuthenticated ? "Login required" : "Filter by type")} />
               </SelectTrigger>
               <SelectContent className="z-[9999] bg-white border-gray-200">
-                {/* Changed from empty string to 'all' */}
                 <SelectItem value="all">All Types</SelectItem>
                 <SelectItem value="expense">Expense</SelectItem>
                 <SelectItem value="income">Income</SelectItem>
@@ -149,15 +185,27 @@ const TransactionListModal = ({ isOpen, onClose }) => {
             </Select>
 
             {/* Filter by Category */}
-            <Select value={filterCategory} onValueChange={setFilterCategory} disabled={categories.length === 0 || !!error}>
+            <Select
+              value={filterCategory}
+              onValueChange={setFilterCategory}
+              disabled={isLoading || isCategoriesLoading || categories.length === 0 || !!categoriesError || auth0Loading || !isAuthenticated}
+            >
               <SelectTrigger className="bg-white border-gray-200 text-gray-900">
-                <SelectValue placeholder={error ? `Error: ${error}` : "Filter by category"} />
+                <SelectValue
+                  placeholder={
+                    auth0Loading ? "Authenticating..." :
+                    !isAuthenticated ? "Login required" :
+                    isCategoriesLoading ? "Loading categories..." :
+                    categoriesError ? `Error: ${categoriesError}` :
+                    "Filter by category"
+                  }
+                />
               </SelectTrigger>
               <SelectContent className="z-[9999] bg-white border-gray-200">
-                {/* This is fine as "_all" is not an empty string */}
+                {/* "_all" is fine as a non-empty string */}
                 <SelectItem value="_all">All Categories</SelectItem>
-                {/* Map over fetched categories */}
-                {categories.map(cat => (
+                {/* Map over fetched categories only if authenticated, not loading, and no error */}
+                {isAuthenticated && !isCategoriesLoading && !categoriesError && categories.map(cat => (
                   <SelectItem key={cat._id} value={cat._id}>{cat.name}</SelectItem>
                 ))}
               </SelectContent>
@@ -170,6 +218,7 @@ const TransactionListModal = ({ isOpen, onClose }) => {
               onChange={(e) => setFilterStartDate(e.target.value)}
               placeholder="Start Date"
               className="bg-white border-gray-200 text-gray-900"
+              disabled={isLoading || auth0Loading || !isAuthenticated}
             />
             <Input
               type="date"
@@ -177,9 +226,24 @@ const TransactionListModal = ({ isOpen, onClose }) => {
               onChange={(e) => setFilterEndDate(e.target.value)}
               placeholder="End Date"
               className="bg-white border-gray-200 text-gray-900"
+              disabled={isLoading || auth0Loading || !isAuthenticated}
             />
           </div>
 
+
+          {/* Loading, Error, No Data Messages */}
+          {auth0Loading && (
+            <div className="flex items-center justify-center py-8 text-blue-500">
+              <Loader2 className="mr-2 h-6 w-6 animate-spin" />
+              <p>Authenticating...</p>
+            </div>
+          )}
+          {!auth0Loading && !isAuthenticated && (
+            <div className="flex items-center p-4 rounded-lg bg-red-50 text-red-700 border border-red-200">
+              <XCircle className="h-5 w-5 mr-3" />
+              <p>You must be logged in to view transactions.</p>
+            </div>
+          )}
 
           {isLoading && (
             <div className="flex items-center justify-center py-8">
@@ -195,13 +259,14 @@ const TransactionListModal = ({ isOpen, onClose }) => {
             </div>
           )}
 
-          {!isLoading && !error && transactions.length === 0 && (
+          {!isLoading && !error && isAuthenticated && transactions.length === 0 && (
             <div className="text-center text-gray-600 py-8">
-              <p>No transactions found for the selected criteria.</p>
+              <p>No transactions found for the selected criteria. Try adding some!</p>
             </div>
           )}
 
-          {!isLoading && !error && transactions.length > 0 && (
+          {/* Transactions Table */}
+          {!isLoading && !error && isAuthenticated && transactions.length > 0 && (
             <div className="border border-gray-200 rounded-lg overflow-hidden bg-white shadow-sm">
               <table className="w-full">
                 <thead className="bg-gray-50">
@@ -215,26 +280,26 @@ const TransactionListModal = ({ isOpen, onClose }) => {
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
                   {transactions.map((transaction) => (
-                    <tr key={transaction._id} className="hover:bg-gray-50 transition-colors">
-                      <td className="px-4 py-3 text-sm text-gray-900">
+                    <TableRow key={transaction._id} className="hover:bg-gray-50 transition-colors">
+                      <TableCell className="px-4 py-3 text-sm text-gray-900">
                         {formatDate(transaction.date)}
-                      </td>
-                      <td className="px-4 py-3 text-sm text-gray-900">
+                      </TableCell>
+                      <TableCell className="px-4 py-3 text-sm text-gray-900">
                         {transaction.category ? transaction.category.name : 'N/A'}
-                      </td>
-                      <td className="px-4 py-3 text-sm text-gray-900">
+                      </TableCell>
+                      <TableCell className="px-4 py-3 text-sm text-gray-900">
                         {transaction.merchantName || transaction.description || 'N/A'}
-                      </td>
-                      <td className={`px-4 py-3 text-right font-medium ${
+                      </TableCell>
+                      <TableCell className={`px-4 py-3 text-right font-medium ${
                         transaction.type === 'expense' ? 'text-red-600' : 'text-green-600'
                       }`}>
                         {transaction.type === 'expense' ? '-' : '+'}
                         {transaction.amount.toFixed(2)} {transaction.currency}
-                      </td>
-                      <td className="px-4 py-3 text-sm text-gray-900">
+                      </TableCell>
+                      <TableCell className="px-4 py-3 text-sm text-gray-900">
                         {transaction.paymentMethod || 'N/A'}
-                      </td>
-                    </tr>
+                      </TableCell>
+                    </TableRow>
                   ))}
                 </tbody>
               </table>
@@ -242,7 +307,7 @@ const TransactionListModal = ({ isOpen, onClose }) => {
           )}
 
           {/* Pagination Controls */}
-          {!isLoading && !error && totalPages > 1 && (
+          {!isLoading && !error && isAuthenticated && totalPages > 1 && (
             <div className="flex justify-between items-center mt-6">
               <Button
                 onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}

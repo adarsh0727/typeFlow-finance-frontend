@@ -7,10 +7,14 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { XCircle, Loader2 } from 'lucide-react';
+import { useAuth0 } from '@auth0/auth0-react'; 
 
 const COLORS = ["#0088FE", "#00C49F", "#FFBB28", "#FF8042", "#AA336A", "#6a0572", "#a6e3e9", "#70d6ff", "#ff70a6", "#ff9770"];
 
 const ReportsModal = ({ isOpen, onClose }) => {
+  // useAuth0 hook here
+  const { getAccessTokenSilently, isAuthenticated, isLoading: auth0Loading } = useAuth0();
+
   const [selectedGraphType, setSelectedGraphType] = useState("monthly-spending");
   const [graphData, setGraphData] = useState([]);
   const [isLoadingGraph, setIsLoadingGraph] = useState(true);
@@ -22,18 +26,25 @@ const ReportsModal = ({ isOpen, onClose }) => {
     setGraphError(null);
     setGraphData([]);
 
+    if (auth0Loading || !isAuthenticated) {
+        setGraphError('Authentication required. Please log in.');
+        setIsLoadingGraph(false);
+        return;
+    }
+
     try {
-      const authToken = localStorage.getItem('authToken');
-      if (!authToken) {
-        throw new Error('Authentication token not found. Please log in.');
-      }
+      const accessToken = await getAccessTokenSilently({
+        authorizationParams: {
+          audience: process.env.VITE_AUTH0_AUDIENCE,
+        },
+      });
 
       const apiUrl = `http://localhost:5000/api/reports/${type}`;
 
       const response = await fetch(apiUrl, {
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${authToken}`
+          'Authorization': `Bearer ${accessToken}`
         }
       });
 
@@ -53,10 +64,10 @@ const ReportsModal = ({ isOpen, onClose }) => {
   };
 
   useEffect(() => {
-    if (isOpen) { // Conditional logic inside useEffect is fine
+    if (isOpen && isAuthenticated) {
       fetchGraphData(selectedGraphType);
     }
-  }, [isOpen, selectedGraphType]);
+  }, [isOpen, selectedGraphType, isAuthenticated, auth0Loading]); 
 
   const handleClose = () => {
     setSelectedGraphType("monthly-spending");
@@ -69,11 +80,12 @@ const ReportsModal = ({ isOpen, onClose }) => {
   if (!isOpen) return null;
 
 
-  // Renders the appropriate chart based on selectedGraphType
   const renderChart = () => {
-    if (isLoadingGraph) return <p className="text-center py-8"><Loader2 className="animate-spin inline-block mr-2" /> Loading chart...</p>;
+    if (auth0Loading) return <p className="text-center py-8"><Loader2 className="animate-spin inline-block mr-2" /> Authenticating...</p>;
+
+    if (isLoadingGraph) return <p className="text-center py-8"><Loader2 className="animate-spin inline-block mr-2" /> Loading chart data...</p>;
     if (graphError) return <p className="text-center text-red-500 py-8">Error: {graphError}</p>;
-    if (!graphData || graphData.length === 0) return <p className="text-center py-8">No data available for this report.</p>;
+    if (!graphData || graphData.length === 0) return <p className="text-center py-8">No data available for this report. Try adding some transactions!</p>;
 
     switch (selectedGraphType) {
       case "monthly-spending":
@@ -145,11 +157,11 @@ const ReportsModal = ({ isOpen, onClose }) => {
         </CardHeader>
         <CardContent className="flex-grow overflow-auto p-6">
           <div className="flex justify-end mb-6">
-            <Select value={selectedGraphType} onValueChange={setSelectedGraphType} disabled={isLoadingGraph}>
+            <Select value={selectedGraphType} onValueChange={setSelectedGraphType} disabled={isLoadingGraph || auth0Loading || !isAuthenticated}>
               <SelectTrigger className="w-[220px] bg-white border-gray-200 text-gray-900">
                 <SelectValue placeholder="Select Report Type" />
               </SelectTrigger>
-              <SelectContent className="bg-white border-gray-200">
+              <SelectContent className="bg-white border-gray-200 z-[9999]"> {/* Added z-index to SelectContent */}
                 <SelectItem value="monthly-spending">Spending: Last 12 Months</SelectItem>
                 <SelectItem value="expenses-by-category">Expense by Category</SelectItem>
                 <SelectItem value="income-vs-expense">Income vs Expense</SelectItem>

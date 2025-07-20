@@ -25,7 +25,7 @@ const QuickActions = () => {
       setIsTransactionFormModalOpen(true);
     } else if (path === "/view-transactions") {
       setIsTransactionListModalOpen(true);
-    } else if (path === "/reports") { // New condition for View Reports
+    } else if (path === "/reports") { 
       setIsReportsModalOpen(true);
     }
     else {
@@ -145,7 +145,7 @@ const QuickActions = () => {
         isOpen={isTransactionListModalOpen}
         onClose={() => setIsTransactionListModalOpen(false)}
       />
-      <ReportsModal // Renders the new ReportsModal
+      <ReportsModal 
         isOpen={isReportsModalOpen}
         onClose={() => setIsReportsModalOpen(false)}
       />

@@ -1,9 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { TrendingUp, Receipt, PieChart, FileText, Users, Filter, Upload, BarChart3, DollarSign, Calendar, Shield, ArrowRight, Star } from 'lucide-react';
+import { useAuth0 } from '@auth0/auth0-react';
+
 
 const LandingPage = () => {
+
   const [activeFeature, setActiveFeature] = useState(0);
   const [isVisible, setIsVisible] = useState(false);
+
+    //   for auth0
+    const { loginWithRedirect } = useAuth0();
 
   useEffect(() => {
     setIsVisible(true);
@@ -65,8 +71,10 @@ const LandingPage = () => {
               <a href="#features" className="text-slate-300 hover:text-teal-400 transition-colors">Features</a>
               <a href="#about" className="text-slate-300 hover:text-teal-400 transition-colors">About</a>
               <a href="#contact" className="text-slate-300 hover:text-teal-400 transition-colors">Contact</a>
-              <button className="bg-gradient-to-r from-teal-500 to-sky-500 px-6 py-2 rounded-full hover:from-teal-600 hover:to-sky-600 transition-all transform hover:scale-105">
-                Get Started
+              <button className="bg-gradient-to-r from-teal-500 to-sky-500 px-6 py-2 rounded-full hover:from-teal-600 hover:to-sky-600 transition-all transform hover:scale-105"
+                onClick={() => loginWithRedirect()}
+              >
+                Login/SignUp
               </button>
             </div>
           </div>
@@ -85,7 +93,7 @@ const LandingPage = () => {
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
               <button className="bg-gradient-to-r from-teal-500 to-sky-500 px-8 py-4 rounded-full text-lg font-semibold hover:from-teal-600 hover:to-sky-600 transition-all transform hover:scale-105 shadow-lg hover:shadow-teal-500/25">
-                Start Free Trial
+                Get Started
                 <ArrowRight className="w-5 h-5 ml-2 inline" />
               </button>
               <button className="border-2 border-teal-400 px-8 py-4 rounded-full text-lg font-semibold text-teal-400 hover:bg-teal-400 hover:text-slate-900 transition-all transform hover:scale-105">
@@ -263,10 +271,10 @@ const LandingPage = () => {
             <p className="text-xl text-slate-300 mb-8">
               Join thousands of users who have already revolutionized their financial management with our powerful platform.
             </p>
-            <button className="bg-gradient-to-r from-teal-500 to-sky-500 px-10 py-4 rounded-full text-lg font-semibold hover:from-teal-600 hover:to-sky-600 transition-all transform hover:scale-105 shadow-lg hover:shadow-teal-500/25">
+            {/* <button className="bg-gradient-to-r from-teal-500 to-sky-500 px-10 py-4 rounded-full text-lg font-semibold hover:from-teal-600 hover:to-sky-600 transition-all transform hover:scale-105 shadow-lg hover:shadow-teal-500/25">
               Start Your Free Trial Today
               <ArrowRight className="w-5 h-5 ml-2 inline" />
-            </button>
+            </button> */}
           </div>
         </div>
       </section>

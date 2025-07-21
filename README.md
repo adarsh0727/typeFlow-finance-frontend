@@ -1,76 +1,83 @@
-# Typeflow Finance - Backend
+# Typeflow Finance - Frontend
 
-A comprehensive financial management web application backend built with Node.js and Express.js. This backend provides robust APIs for managing financial data, transactions, categories, reports, and user authentication using OCR capabilities for document processing.
+A modern, responsive financial management web application frontend built with React, featuring a beautiful UI powered by shadcn/ui components and secure authentication via Auth0. The application provides an intuitive dashboard for managing personal finances, tracking transactions, and generating insightful reports.
 
 ## 🏗️ Project Structure
 
 ```
-backend/
-├── controllers/           # Request handlers and business logic
-│   ├── category.controller.js    # Category management operations
-│   ├── ocr.controller.js         # OCR processing for documents
-│   ├── report.controller.js      # Financial reporting logic
-│   └── transaction.controller.js # Transaction CRUD operations
-├── db/                   # Database configuration
-│   └── connect.js        # Database connection setup
-├── middleware/           # Custom middleware functions
-├── models/              # Database models and schemas
-│   ├── category.model.js # Category data model
-│   ├── transaction.model.js # Transaction data model
-│   └── user.model.js     # User data model
-├── node_modules/        # Project dependencies
-├── routes/              # API route definitions
-│   ├── category.routes.js    # Category-related endpoints
-│   ├── ocr.routes.js         # OCR processing endpoints
-│   ├── report.routes.js      # Report generation endpoints
-│   └── transaction.routes.js # Transaction management endpoints
-├── uploads/             # File upload storage
-├── utils/              # Utility functions and helpers
-│   ├── ocrHelper.js     # OCR processing utilities
-│   └── parser.js        # Data parsing utilities
-├── .env                # Environment variables
-├── .gitignore          # Git ignore rules
-├── package.json        # Project dependencies and scripts
-├── package-lock.json   # Dependency lock file
-├── README.md           # Project documentation
-└── server.js           # Application entry point
+frontend/
+├── node_modules/           # Project dependencies
+├── public/                # Static public assets
+├── src/                   # Source code
+│   ├── assets/            # Static assets (images, icons, etc.)
+│   ├── components/        # Reusable UI components
+│   │   ├── dashboard/     # Dashboard-specific components
+│   │   │   ├── DashboardStats.jsx    # Statistics cards and metrics
+│   │   │   ├── GettingStarted.jsx    # Onboarding component
+│   │   │   └── QuickActions.jsx      # Quick action buttons
+│   │   ├── layout/        # Layout components
+│   │   │   └── Header.jsx            # Application header/navigation
+│   │   ├── modals/        # Modal dialog components
+│   │   │   ├── PdfUploadModal.jsx        # PDF document upload
+│   │   │   ├── ReportsModal.jsx          # Report generation modal
+│   │   │   ├── ScanReceiptModal.jsx      # Receipt scanning modal
+│   │   │   ├── TransactionFormModal.jsx  # Transaction creation/edit
+│   │   │   └── TransactionListModal.jsx  # Transaction listing modal
+│   │   └── ui/            # shadcn/ui components
+│   ├── lib/               # Utility libraries and configurations
+│   │   └── utils.js       # Helper functions and utilities
+│   ├── pages/             # Page components
+│   │   ├── Dashboard.jsx  # Main dashboard page
+│   │   ├── LandingPage.jsx # Marketing/landing page
+│   │   ├── App.jsx        # Root application component
+│   │   ├── index.css      # Global styles
+│   │   └── main.jsx       # Application entry point
+├── .env                   # Environment variables
+├── .gitignore            # Git ignore configuration
+└── components.json       # shadcn/ui component configuration
 ```
+## Flow Diagram
+![Alert](https://github.com/user-attachments/assets/fc2ecac8-880c-4781-a8e2-9adf41f18a12)
 
 ## 🚀 Features
 
-- **Transaction Management**: Complete CRUD operations for financial transactions
-- **Category System**: Organize transactions with customizable categories
-- **OCR Integration**: Extract financial data from documents and receipts
-- **Report Generation**: Generate comprehensive financial reports and analytics
-- **User Management**: User authentication and profile management
-- **File Upload**: Handle document and receipt uploads
-- **Database Integration**: Robust data persistence layer
+- **Modern Dashboard**: Comprehensive financial overview with interactive charts and statistics
+- **Transaction Management**: Easy-to-use forms for adding, editing, and categorizing transactions
+- **Receipt Scanning**: OCR-powered receipt scanning for automatic transaction creation
+- **PDF Processing**: Upload and process financial documents
+- **Responsive Design**: Mobile-first design that works seamlessly across all devices
+- **Secure Authentication**: Auth0 integration for robust user authentication and authorization
+- **Beautiful UI**: Modern interface built with shadcn/ui components and Tailwind CSS
 
 ## 🛠️ Technologies Used
 
-- **Runtime**: Node.js
-- **Framework**: Express.js
-- **Database**: MongoDB/PostgreSQL (configured via connect.js)
-- **OCR Processing**: Integration for document text extraction
-- **File Handling**: Multer for file uploads
-- **Authentication**: JWT-based authentication system
-- **Validation**: Input validation and sanitization
+- **Framework**: React 18+ with Vite
+- **UI Components**: shadcn/ui (Radix UI primitives)
+- **Styling**: Tailwind CSS
+- **Authentication**: Auth0
+- **State Management**: React Context API / Zustand (inferred)
+- **Routing**: React Router
+- **HTTP Client**: Axios/Fetch API
+- **Charts**: Recharts/Chart.js (for dashboard statistics)
+- **Form Handling**: React Hook Form
+- **File Processing**: PDF.js for PDF handling
+- **Icons**: Lucide React icons
 
 ## 📋 Prerequisites
 
 Before running this application, make sure you have:
 
-- Node.js (v14 or higher)
+- Node.js (v16 or higher)
 - npm or yarn package manager
-- Database (MongoDB/PostgreSQL)
-- OCR service credentials (if applicable)
+- Auth0 account and application setup
+- Backend API running (Typeflow Finance Backend)
 
 ## ⚡ Quick Start
 
 1. **Clone the repository**
    ```bash
    git clone [your-repository-url]
-   cd typeflow-finance/backend
+   cd typeflow-finance/frontend
    ```
 
 2. **Install dependencies**
@@ -81,145 +88,225 @@ Before running this application, make sure you have:
 3. **Environment Setup**
    Create a `.env` file in the root directory:
    ```env
-   # Database Configuration
-   DB_CONNECTION_STRING=your_database_url
+   # Auth0 Configuration
+   VITE_AUTH0_DOMAIN=your-auth0-domain.auth0.com
+   VITE_AUTH0_CLIENT_ID=your_auth0_client_id
+   VITE_AUTH0_AUDIENCE=your_api_audience
+   VITE_AUTH0_REDIRECT_URI=http://localhost:3000
    
-   # Server Configuration
-   PORT=3000
-   NODE_ENV=development
+   # API Configuration
+   VITE_API_BASE_URL=http://localhost:5000/api
+   VITE_BACKEND_URL=http://localhost:5000
    
-   # JWT Configuration
-   JWT_SECRET=your_jwt_secret
-   JWT_EXPIRES_IN=7d
-   
-   # OCR Service Configuration
-   OCR_API_KEY=your_ocr_api_key
-   OCR_ENDPOINT=your_ocr_endpoint
-   
-   # File Upload Configuration
-   MAX_FILE_SIZE=5242880
-   UPLOAD_PATH=./uploads
+   # App Configuration
+   VITE_APP_NAME=Typeflow Finance
+   VITE_APP_VERSION=1.0.0
    ```
 
-4. **Start the server**
+4. **Configure shadcn/ui components**
    ```bash
-   # Development mode
-   npm run dev
-   
-   # Production mode
-   npm start
+   npx shadcn-ui@latest init
    ```
 
-## 🔌 API Endpoints
+5. **Start the development server**
+   ```bash
+   npm run dev
+   ```
 
-### Categories
-- `GET /api/categories` - Get all categories
+6. **Build for production**
+   ```bash
+   npm run build
+   ```
 
-### Transactions
-- `GET /api/transactions` - Get all transactions
-- `POST /api/transactions` - Create new transaction
-- `PUT /api/transactions/:id` - Update transaction
-- `DELETE /api/transactions/:id` - Delete transaction
+## 🎨 UI Components
 
-### OCR Processing
-- `POST /api/ocr/process` - Process document with OCR
-- `GET /api/ocr/status/:id` - Check OCR processing status
+### Dashboard Components
 
-### Reports
-- `GET /api/reports/summary` - Get financial summary
-- `GET /api/reports/monthly` - Get monthly reports
-- `GET /api/reports/category-breakdown` - Get category-wise breakdown
+#### DashboardStats.jsx
+- Financial metrics and KPI cards
+- Interactive charts and graphs
+- Monthly/yearly comparisons
+- Category-wise spending breakdowns
 
-## 📊 Database Models
+#### GettingStarted.jsx
+- Onboarding experience for new users
+- Setup wizard for initial configuration
+- Feature highlights and tutorials
 
-### Transaction Model
+#### QuickActions.jsx
+- Rapid transaction entry
+- Quick category selection
+- Recent actions shortcuts
+
+### Modal Components
+
+#### TransactionFormModal.jsx
+- Create and edit transactions
+- Category assignment
+- Date and amount validation
+- Receipt attachment support
+
+#### ScanReceiptModal.jsx
+- Camera integration for receipt capture
+- OCR processing interface
+- Manual correction capabilities
+- Automatic transaction creation
+
+#### ReportsModal.jsx
+- Report parameter selection
+- Date range pickers
+- Export options (PDF, CSV)
+- Preview functionality
+
+## 🔐 Authentication Flow
+
+The application uses Auth0 for authentication:
+
+1. **Login Process**: Users are redirected to Auth0 login
+2. **Token Management**: JWT tokens are handled automatically
+3. **Protected Routes**: Dashboard and user-specific features require authentication
+4. **Profile Management**: User profile information from Auth0
+5. **Logout**: Secure session termination
+
+## 📱 Responsive Design
+
+- **Mobile First**: Optimized for mobile devices
+- **Tablet Support**: Adapted layouts for tablet screens
+- **Desktop Experience**: Full-featured desktop interface
+- **Touch Friendly**: Gesture support for mobile interactions
+
+## 🎯 Page Components
+
+### Dashboard.jsx
+- Main application interface
+- Financial overview widgets
+- Transaction list and filters
+- Quick action buttons
+- Real-time data updates
+
+### LandingPage.jsx
+- Marketing homepage
+- Feature showcase
+- Pricing information
+- Call-to-action sections
+- User testimonials
+
+## 🛡️ Security Features
+
+- **Auth0 Integration**: Enterprise-grade authentication
+- **Token Validation**: Automatic token refresh and validation
+- **Protected Routes**: Route-level access control
+- **Secure API Calls**: Authenticated requests to backend
+- **XSS Protection**: Input sanitization and validation
+
+## 🎨 Styling and Theming
+
+### Tailwind CSS Configuration
 ```javascript
-{
-  id: ObjectId,
-  amount: Number,
-  description: String,
-  category: ObjectId,
-  date: Date,
-  type: String, // 'income' or 'expense'
-  userId: ObjectId,
-  createdAt: Date,
-  updatedAt: Date
+// tailwind.config.js
+module.exports = {
+  content: ["./src/**/*.{js,jsx,ts,tsx}"],
+  theme: {
+    extend: {
+      colors: {
+        // Custom color palette for financial app
+      }
+    }
+  }
 }
 ```
 
-### Category Model
-```javascript
+### shadcn/ui Integration
+- Consistent component design system
+- Customizable theme variables
+- Dark/light mode support
+- Accessible component variants
+
+## 📊 Dashboard Features
+
+### Financial Statistics
+- Total balance and net worth
+- Monthly income vs expenses
+- Category-wise spending analysis
+- Transaction trends and patterns
+
+### Interactive Charts
+- Income/expense trends over time
+- Category distribution pie charts
+- Monthly comparison bar charts
+- Goal tracking progress bars
+
+### Quick Actions
+- Add new transaction
+- Scan receipt
+- Generate report
+- Upload financial documents
+
+## 🔧 Configuration Files
+
+### components.json
+```json
 {
-  id: ObjectId,
-  name: String,
-  description: String,
-  color: String,
-  icon: String,
-  userId: ObjectId,
-  createdAt: Date,
-  updatedAt: Date
+  "$schema": "https://ui.shadcn.com/schema.json",
+  "style": "default",
+  "rsc": false,
+  "tsx": false,
+  "tailwind": {
+    "config": "tailwind.config.js",
+    "css": "src/index.css",
+    "baseColor": "slate",
+    "cssVariables": true
+  },
+  "aliases": {
+    "components": "@/components",
+    "utils": "@/lib/utils"
+  }
 }
 ```
-
-### User Model
-```javascript
-{
-  id: ObjectId,
-  username: String,
-  email: String,
-  password: String,
-  profile: Object,
-  createdAt: Date,
-  updatedAt: Date
-}
-```
-
-## 🔧 Configuration
-
-### Database Connection
-Configure your database connection in `db/connect.js`. The application supports both MongoDB and PostgreSQL.
-
-### File Uploads
-Upload configurations are handled in the `uploads/` directory. Supported file types include:
-- Images (JPG, PNG, PDF) for OCR processing
-- Maximum file size: 5MB (configurable)
-
-### OCR Integration
-The OCR functionality processes financial documents and extracts:
-- Transaction amounts
-- Merchant names
-- Transaction dates
-- Category suggestions
 
 ## 🧪 Testing
 
 ```bash
-# Run tests
-npm test
+# Run unit tests
+npm run test
 
 # Run tests with coverage
 npm run test:coverage
 
-# Run integration tests
-npm run test:integration
+# Run e2e tests
+npm run test:e2e
 ```
 
 
+### Environment Variables for Production
+```env
+VITE_AUTH0_DOMAIN=your-production-domain.auth0.com
+VITE_API_BASE_URL=https://your-production-api.com/api
+VITE_AUTH0_REDIRECT_URI=https://your-domain.com
+```
 
 ## 📝 Contributing
 
 1. Fork the repository
 2. Create your feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add some amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
+3. Follow the component naming conventions
+4. Add appropriate tests
+5. Commit your changes (`git commit -m 'Add some amazing feature'`)
+6. Push to the branch (`git push origin feature/amazing-feature`)
+7. Open a Pull Request
 
-## 🔒 Security
+## 🎯 Performance Optimization
 
-- auth0 authentication
-- Input validation and sanitization
-- Rate limiting on API endpoints
-- Secure file upload handling
-- Environment variable protection
+- **Code Splitting**: Lazy loading of components
+- **Image Optimization**: Compressed and responsive images
+- **Bundle Analysis**: Regular bundle size monitoring
+- **CDN**: Static asset delivery optimization
 
-**Typeflow Finance Backend** - Empowering financial management through technology.
+
+## 📄 License
+
+This project is licensed under the MIT License - see the LICENSE file for details.
+
+---
+
+**Typeflow Finance Frontend** - Beautiful, secure, and intuitive financial management interface.

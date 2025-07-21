@@ -2,6 +2,9 @@
 
 A modern, responsive financial management web application frontend built with React, featuring a beautiful UI powered by shadcn/ui components and secure authentication via Auth0. The application provides an intuitive dashboard for managing personal finances, tracking transactions, and generating insightful reports.
 
+## Demo link :-
+https://drive.google.com/file/d/1T1i2fIhzW2mRZ403Cv_Zh4z3MUXrlN_s/view?usp=sharing
+
 ## 🏗️ Project Structure
 
 ```
